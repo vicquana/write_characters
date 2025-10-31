@@ -71,7 +71,7 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center p-4 font-sans">
       <header className="w-full max-w-2xl text-center mb-4 md:mb-6">
-        <h1 className="text-3xl sm:text-4xl font-bold text-cyan-400">汉字练习</h1>
+        <h1 className="text-3xl sm:text-4xl font-bold text-cyan-400">我愛寫國字</h1>
         <p className="text-lg sm:text-xl text-gray-300">Chinese Character Practice</p>
       </header>
 
