@@ -4,7 +4,7 @@ import { CharacterCanvas, CharacterCanvasRef } from './components/CharacterCanva
 import { Controls } from './components/Controls';
 import { FeedbackDisplay } from './components/FeedbackDisplay';
 import { CharacterSelector } from './components/CharacterSelector';
-import { evaluateCharacter } from './services/geminiService';
+import { evaluateCharacter } from './services/localEvaluationService';
 import { PRACTICE_CHARACTERS } from './constants';
 import { FeedbackResponse } from './types';
 import { Icon } from './components/Icon';
@@ -120,7 +120,7 @@ const App: React.FC = () => {
       </main>
       
       <footer className="w-full max-w-2xl text-center mt-6 text-gray-500 text-sm">
-        <p>Powered by Google Gemini</p>
+        <p>Powered by on-device handwriting heuristics</p>
       </footer>
     </div>
   );

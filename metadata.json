@@ -1,5 +1,5 @@
 {
   "name": "Chinese Character Practice",
-  "description": "An interactive web application for users to practice writing Chinese characters on a smartphone or tablet, with instant feedback provided by the Gemini API.",
+  "description": "An interactive web application for users to practice writing Chinese characters on a smartphone or tablet, with instant feedback generated locally in the browser.",
   "requestFramePermissions": []
 }
