@@ -17,11 +17,44 @@ const App: React.FC = () => {
   const [feedback, setFeedback] = useState<FeedbackResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [canSelectOtherCharacter, setCanSelectOtherCharacter] = useState(true);
   const canvasRef = useRef<CharacterCanvasRef>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const pronunciationAudioRef = useRef<HTMLAudioElement | null>(null);
 
   const currentCharacter = characters[currentCharacterIndex] ?? '';
+
+  const speakCharacter = useCallback(
+    (character: string) => {
+      if (!character) {
+        return;
+      }
+
+      if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+        console.error('Speech synthesis not supported.');
+        setError('此瀏覽器不支援發音功能。');
+        return;
+      }
+
+      window.speechSynthesis.cancel();
+
+      const utterance = new SpeechSynthesisUtterance(character);
+      utterance.lang = 'zh-TW';
+      utterance.rate = 0.8;
+      utterance.onstart = () => {
+        setStatusMessage(`正在播放「${character}」的發音。`);
+      };
+      utterance.onend = () => {
+        setStatusMessage(null);
+      };
+      utterance.onerror = () => {
+        setStatusMessage(null);
+        setError('無法播放發音，請稍後再試。');
+      };
+
+      window.speechSynthesis.speak(utterance);
+    },
+    [setError, setStatusMessage]
+  );
 
   useEffect(() => {
     if (characters.length === 0) {
@@ -42,15 +75,33 @@ const App: React.FC = () => {
   }, []);
 
   const handleSelectCharacter = (index: number) => {
-    setCurrentCharacterIndex(index);
+    if (index === currentCharacterIndex) {
+      return;
+    }
+
+    if (!canSelectOtherCharacter) {
+      setStatusMessage(null);
+      setError('請先達到 70 分以上再選擇其他字。');
+      return;
+    }
+
     resetStateForNewCharacter();
+    setCanSelectOtherCharacter(false);
+    setCurrentCharacterIndex(index);
   };
 
   const handleNextCharacter = useCallback(() => {
     if (characters.length === 0) return;
-    setCurrentCharacterIndex((prevIndex) => (prevIndex + 1) % characters.length);
+    if (!canSelectOtherCharacter) {
+      setStatusMessage(null);
+      setError('請先達到 70 分以上再前往下一個字。');
+      return;
+    }
+
     resetStateForNewCharacter();
-  }, [characters.length, resetStateForNewCharacter]);
+    setCanSelectOtherCharacter(false);
+    setCurrentCharacterIndex((prevIndex) => (prevIndex + 1) % characters.length);
+  }, [canSelectOtherCharacter, characters.length, resetStateForNewCharacter]);
 
   const handleSubmit = async () => {
     if (!canvasRef.current) return;
@@ -75,6 +126,7 @@ const App: React.FC = () => {
     try {
       const result = await evaluateCharacter(imageData, characterToEvaluate);
       setFeedback(result);
+      setCanSelectOtherCharacter(result.score > 70);
     } catch (err) {
       setError('評分時發生錯誤，請稍後再試。');
       console.error(err);
@@ -94,45 +146,13 @@ const App: React.FC = () => {
     canvasRef.current?.undo();
   };
 
-  const handlePronounce = async () => {
+  const handlePronounce = () => {
     if (!currentCharacter) {
       return;
     }
 
     setError(null);
-
-    try {
-      if (pronunciationAudioRef.current) {
-        pronunciationAudioRef.current.pause();
-        pronunciationAudioRef.current.currentTime = 0;
-      }
-
-      const audio = new Audio(
-        `https://dict.youdao.com/dictvoice?type=2&audio=${encodeURIComponent(currentCharacter)}`
-      );
-
-      audio.onended = () => {
-        if (pronunciationAudioRef.current === audio) {
-          setStatusMessage(null);
-        }
-      };
-
-      audio.onerror = () => {
-        if (pronunciationAudioRef.current === audio) {
-          setStatusMessage(null);
-          setError('無法播放發音，請稍後再試。');
-        }
-      };
-
-      pronunciationAudioRef.current = audio;
-      setStatusMessage(`正在播放「${currentCharacter}」的發音。`);
-      await audio.play();
-    } catch (err) {
-      console.error(err);
-      pronunciationAudioRef.current = null;
-      setStatusMessage(null);
-      setError('無法播放發音，請稍後再試。');
-    }
+    speakCharacter(currentCharacter);
   };
 
   const handlePhotoButtonClick = () => {
@@ -181,6 +201,22 @@ const App: React.FC = () => {
     }
   };
 
+  useEffect(() => {
+    if (!currentCharacter) {
+      return;
+    }
+
+    speakCharacter(currentCharacter);
+  }, [currentCharacter, speakCharacter]);
+
+  useEffect(() => {
+    return () => {
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
+
   return (
     <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center p-4 font-sans">
       <header className="w-full max-w-2xl text-center mb-4 md:mb-6">
@@ -195,7 +231,41 @@ const App: React.FC = () => {
             characters={characters}
             selectedIndex={currentCharacterIndex}
             onSelect={handleSelectCharacter}
+            canSelectOtherCharacter={canSelectOtherCharacter}
           />
+          {!canSelectOtherCharacter && (
+            <p className="mt-3 text-sm text-amber-300 bg-amber-900/30 border border-amber-700 rounded-lg px-3 py-2">
+              需要獲得 70 分以上才能選擇其他字。
+            </p>
+          )}
+          <div className="mt-4 flex flex-col gap-3">
+            <button
+              type="button"
+              onClick={handlePhotoButtonClick}
+              disabled={isProcessingPhoto}
+              className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:bg-indigo-800/60 disabled:text-indigo-200 text-white text-sm font-semibold shadow"
+            >
+              {isProcessingPhoto ? (
+                <>
+                  <Icon name="loader" className="animate-spin" />
+                  辨識中...
+                </>
+              ) : (
+                <>
+                  <Icon name="camera" />
+                  拍照取字
+                </>
+              )}
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              onChange={handlePhotoSelected}
+            />
+          </div>
         </div>
 
         <div className="flex flex-col items-center w-full max-w-md">
@@ -213,32 +283,6 @@ const App: React.FC = () => {
                 <Icon name="sound" />
                 發音
               </button>
-              <button
-                type="button"
-                onClick={handlePhotoButtonClick}
-                disabled={isProcessingPhoto}
-                className="flex items-center gap-2 px-3 py-2 rounded-lg bg-indigo-600/80 hover:bg-indigo-500 disabled:bg-indigo-800/60 disabled:text-indigo-200 text-white text-sm font-semibold shadow"
-              >
-                {isProcessingPhoto ? (
-                  <>
-                    <Icon name="loader" className="animate-spin" />
-                    辨識中...
-                  </>
-                ) : (
-                  <>
-                    <Icon name="camera" />
-                    拍照取字
-                  </>
-                )}
-              </button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                capture="environment"
-                className="hidden"
-                onChange={handlePhotoSelected}
-              />
             </div>
           </div>
 
