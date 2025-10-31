@@ -8,6 +8,7 @@ interface DrawingMetrics {
   offsetX: number;
   offsetY: number;
   touchesEdge: boolean;
+  outsideTrackRatio: number;
 }
 
 const loadImageData = (imageDataBase64: string): Promise<ImageData> => {
@@ -44,6 +45,7 @@ const analyseDrawing = async (imageDataBase64: string): Promise<DrawingMetrics> 
   const totalPixels = width * height;
 
   let inkPixels = 0;
+  let outsideTrackPixels = 0;
   let sumX = 0;
   let sumY = 0;
   let minX = width;
@@ -67,6 +69,19 @@ const analyseDrawing = async (imageDataBase64: string): Promise<DrawingMetrics> 
         if (y < minY) minY = y;
         if (x > maxX) maxX = x;
         if (y > maxY) maxY = y;
+
+        const normalizedX = (x + 0.5) / width;
+        const normalizedY = (y + 0.5) / height;
+        const trackMargin = 0.12;
+        const insideTrack =
+          normalizedX >= trackMargin &&
+          normalizedX <= 1 - trackMargin &&
+          normalizedY >= trackMargin &&
+          normalizedY <= 1 - trackMargin;
+
+        if (!insideTrack) {
+          outsideTrackPixels += 1;
+        }
       }
     }
   }
@@ -80,6 +95,7 @@ const analyseDrawing = async (imageDataBase64: string): Promise<DrawingMetrics> 
       offsetX: 0,
       offsetY: 0,
       touchesEdge: false,
+      outsideTrackRatio: 0,
     };
   }
 
@@ -91,6 +107,7 @@ const analyseDrawing = async (imageDataBase64: string): Promise<DrawingMetrics> 
   const offsetX = Math.abs(centerX - width / 2) / (width / 2);
   const offsetY = Math.abs(centerY - height / 2) / (height / 2);
   const touchesEdge = minX <= 1 || minY <= 1 || maxX >= width - 2 || maxY >= height - 2;
+  const outsideTrackRatio = outsideTrackPixels / inkPixels;
 
   return {
     hasInk: true,
@@ -100,6 +117,7 @@ const analyseDrawing = async (imageDataBase64: string): Promise<DrawingMetrics> 
     offsetX,
     offsetY,
     touchesEdge,
+    outsideTrackRatio,
   };
 };
 
@@ -107,12 +125,12 @@ const clamp = (value: number, min: number, max: number): number => {
   return Math.min(Math.max(value, min), max);
 };
 
-const formatList = (items: string[]): string => {
+const formatSuggestions = (items: string[]): string => {
   if (items.length === 1) return items[0];
-  if (items.length === 2) return `${items[0]} and ${items[1]}`;
-  const allButLast = items.slice(0, -1).join(', ');
+  if (items.length === 2) return `${items[0]}並且${items[1]}`;
+  const allButLast = items.slice(0, -1).join('、');
   const last = items[items.length - 1];
-  return `${allButLast}, and ${last}`;
+  return `${allButLast}，並且${last}`;
 };
 
 export const evaluateCharacter = async (imageDataBase64: string, character: string): Promise<FeedbackResponse> => {
@@ -120,10 +138,10 @@ export const evaluateCharacter = async (imageDataBase64: string, character: stri
 
   if (!metrics.hasInk) {
     return {
-      identifiedCharacter: 'None',
+      identifiedCharacter: '未書寫',
       isCorrect: false,
       score: 0,
-      feedback: `It looks like you haven't written anything yet—try sketching the strokes for ${character}.`,
+      feedback: `看起來還沒有落筆，試著先描寫「${character}」的筆畫。`,
     };
   }
 
@@ -132,33 +150,37 @@ export const evaluateCharacter = async (imageDataBase64: string, character: stri
   const spanScore = clamp(spanAverage / 0.7, 0, 1) * 35;
   const balanceFactor = clamp(1 - ((metrics.offsetX + metrics.offsetY) / 2), 0, 1);
   const balanceScore = balanceFactor * 20;
+  const outsidePenalty = clamp(metrics.outsideTrackRatio, 0, 1) * 40;
 
-  let rawScore = coverageScore + spanScore + balanceScore;
+  let rawScore = coverageScore + spanScore + balanceScore - outsidePenalty;
   if (metrics.touchesEdge) {
-    rawScore -= 10;
+    rawScore -= 12;
   }
 
   const score = Math.round(clamp(rawScore, 0, 100));
   const isCorrect = score >= 60;
-  const identifiedCharacter = isCorrect ? character : 'Unclear';
+  const identifiedCharacter = isCorrect ? character : '不明';
 
   const suggestions: string[] = [];
   if (metrics.coverage < 0.03) {
-    suggestions.push('add more confident strokes');
+    suggestions.push('多寫幾筆讓字形更清楚');
   }
   if (spanAverage < 0.45) {
-    suggestions.push('spread the strokes out to fill the square');
+    suggestions.push('把筆畫稍微拉開填滿米字格');
   }
   if ((metrics.offsetX + metrics.offsetY) / 2 > 0.2) {
-    suggestions.push('center it within the guide');
+    suggestions.push('讓整個字更居中');
   }
   if (metrics.touchesEdge) {
-    suggestions.push('keep the strokes inside the guide');
+    suggestions.push('注意不要碰到外框');
+  }
+  if (metrics.outsideTrackRatio > 0.15) {
+    suggestions.push('維持筆畫在描紅軌跡內');
   }
 
   const feedback = suggestions.length === 0
-    ? `Great job! Your ${character} looks balanced and clear.`
-    : `Try to ${formatList(suggestions)} for a clearer ${character}.`;
+    ? `太棒了！你的「${character}」筆畫穩定又清楚。`
+    : `試著${formatSuggestions(suggestions)}，你的「${character}」會更好看。`;
 
   return {
     identifiedCharacter,
