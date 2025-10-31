@@ -21,18 +21,18 @@ export const FeedbackDisplay: React.FC<FeedbackDisplayProps> = ({ feedback, targ
           <div className={`flex items-center gap-2 ${textColor}`}>
             {isCorrectCharacter ? <Icon name="check" /> : <Icon name="cross" />}
             <h3 className="text-lg font-bold">
-              {isCorrectCharacter ? "Correct!" : "Needs Improvement"}
+              {isCorrectCharacter ? "表現出色" : "需要再練練"}
             </h3>
           </div>
           <p className="text-gray-300 mt-1">{feedback.feedback}</p>
           {!isCorrectCharacter && (
             <p className="text-sm text-gray-400 mt-1">
-              You were practicing "{targetCharacter}", but it looks like you wrote "{feedback.identifiedCharacter}".
+              你正在練習「{targetCharacter}」，但看起來像是「{feedback.identifiedCharacter}」。
             </p>
           )}
         </div>
         <div className="flex flex-col items-center p-3 rounded-lg bg-gray-900/50">
-          <span className="text-sm font-medium text-gray-400">Score</span>
+          <span className="text-sm font-medium text-gray-400">分數</span>
           <span className={`text-4xl font-bold ${scoreColor}`}>{feedback.score}</span>
         </div>
       </div>
