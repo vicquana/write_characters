@@ -1,13 +1,16 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { CharacterCanvas, CharacterCanvasRef } from './components/CharacterCanvas';
-import { Controls } from './components/Controls';
-import { FeedbackDisplay } from './components/FeedbackDisplay';
-import { CharacterSelector } from './components/CharacterSelector';
-import { evaluateCharacter } from './services/localEvaluationService';
-import { PRACTICE_CHARACTERS } from './constants';
-import { FeedbackResponse } from './types';
-import { Icon } from './components/Icon';
-import { extractChineseCharactersFromImage } from './services/ocrService';
+import React, { useState, useRef, useCallback, useEffect } from "react";
+import {
+  CharacterCanvas,
+  CharacterCanvasRef,
+} from "./components/CharacterCanvas";
+import { Controls } from "./components/Controls";
+import { FeedbackDisplay } from "./components/FeedbackDisplay";
+import { CharacterSelector } from "./components/CharacterSelector";
+import { evaluateCharacter } from "./services/localEvaluationService";
+import { PRACTICE_CHARACTERS } from "./constants";
+import { FeedbackResponse } from "./types";
+import { Icon } from "./components/Icon";
+import { extractChineseCharactersFromImage } from "./services/ocrService";
 
 const App: React.FC = () => {
   const [characters, setCharacters] = useState<string[]>(PRACTICE_CHARACTERS);
@@ -21,7 +24,7 @@ const App: React.FC = () => {
   const canvasRef = useRef<CharacterCanvasRef>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const currentCharacter = characters[currentCharacterIndex] ?? '';
+  const currentCharacter = characters[currentCharacterIndex] ?? "";
 
   const speakCharacter = useCallback(
     (character: string) => {
@@ -29,16 +32,16 @@ const App: React.FC = () => {
         return;
       }
 
-      if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
-        console.error('Speech synthesis not supported.');
-        setError('此瀏覽器不支援發音功能。');
+      if (typeof window === "undefined" || !("speechSynthesis" in window)) {
+        console.error("Speech synthesis not supported.");
+        setError("此瀏覽器不支援發音功能。");
         return;
       }
 
       window.speechSynthesis.cancel();
 
       const utterance = new SpeechSynthesisUtterance(character);
-      utterance.lang = 'zh-TW';
+      utterance.lang = "zh-TW";
       utterance.rate = 0.8;
       utterance.onstart = () => {
         setStatusMessage(`正在播放「${character}」的發音。`);
@@ -48,7 +51,7 @@ const App: React.FC = () => {
       };
       utterance.onerror = () => {
         setStatusMessage(null);
-        setError('無法播放發音，請稍後再試。');
+        setError("無法播放發音，請稍後再試。");
       };
 
       window.speechSynthesis.speak(utterance);
@@ -81,7 +84,7 @@ const App: React.FC = () => {
 
     if (!canSelectOtherCharacter) {
       setStatusMessage(null);
-      setError('請先達到 70 分以上再選擇其他字。');
+      setError("請先達到 70 分以上再選擇其他字。");
       return;
     }
 
@@ -94,13 +97,15 @@ const App: React.FC = () => {
     if (characters.length === 0) return;
     if (!canSelectOtherCharacter) {
       setStatusMessage(null);
-      setError('請先達到 70 分以上再前往下一個字。');
+      setError("請先達到 70 分以上再前往下一個字。");
       return;
     }
 
     resetStateForNewCharacter();
     setCanSelectOtherCharacter(false);
-    setCurrentCharacterIndex((prevIndex) => (prevIndex + 1) % characters.length);
+    setCurrentCharacterIndex(
+      (prevIndex) => (prevIndex + 1) % characters.length
+    );
   }, [canSelectOtherCharacter, characters.length, resetStateForNewCharacter]);
 
   const handleSubmit = async () => {
@@ -108,13 +113,13 @@ const App: React.FC = () => {
 
     const characterToEvaluate = currentCharacter;
     if (!characterToEvaluate) {
-      setError('請先選擇要練習的字。');
+      setError("請先選擇要練習的字。");
       return;
     }
 
     const imageData = canvasRef.current.getImageData();
     if (!imageData) {
-      setError('請先書寫漢字再提交。');
+      setError("請先書寫漢字再提交。");
       return;
     }
 
@@ -128,7 +133,7 @@ const App: React.FC = () => {
       setFeedback(result);
       setCanSelectOtherCharacter(result.score > 70);
     } catch (err) {
-      setError('評分時發生錯誤，請稍後再試。');
+      setError("評分時發生錯誤，請稍後再試。");
       console.error(err);
     } finally {
       setIsLoading(false);
@@ -152,6 +157,41 @@ const App: React.FC = () => {
     }
 
     setError(null);
+
+    try {
+      if (pronunciationAudioRef.current) {
+        pronunciationAudioRef.current.pause();
+        pronunciationAudioRef.current.currentTime = 0;
+      }
+
+      const audio = new Audio(
+        `https://dict.youdao.com/dictvoice?type=2&audio=${encodeURIComponent(
+          currentCharacter
+        )}`
+      );
+
+      audio.onended = () => {
+        if (pronunciationAudioRef.current === audio) {
+          setStatusMessage(null);
+        }
+      };
+
+      audio.onerror = () => {
+        if (pronunciationAudioRef.current === audio) {
+          setStatusMessage(null);
+          setError("無法播放發音，請稍後再試。");
+        }
+      };
+
+      pronunciationAudioRef.current = audio;
+      setStatusMessage(`正在播放「${currentCharacter}」的發音。`);
+      await audio.play();
+    } catch (err) {
+      console.error(err);
+      pronunciationAudioRef.current = null;
+      setStatusMessage(null);
+      setError("無法播放發音，請稍後再試。");
+    }
     speakCharacter(currentCharacter);
   };
 
@@ -159,9 +199,11 @@ const App: React.FC = () => {
     fileInputRef.current?.click();
   };
 
-  const handlePhotoSelected: React.ChangeEventHandler<HTMLInputElement> = async (event) => {
+  const handlePhotoSelected: React.ChangeEventHandler<
+    HTMLInputElement
+  > = async (event) => {
     const file = event.target.files?.[0];
-    event.target.value = '';
+    event.target.value = "";
 
     if (!file) {
       return;
@@ -176,13 +218,15 @@ const App: React.FC = () => {
 
       if (extractedCharacters.length === 0) {
         setStatusMessage(null);
-        setError('未能識別任何漢字，請再試一次。');
+        setError("未能識別任何漢字，請再試一次。");
         return;
       }
 
       let addedCount = 0;
       setCharacters((previous) => {
-        const combined = Array.from(new Set([...previous, ...extractedCharacters]));
+        const combined = Array.from(
+          new Set([...previous, ...extractedCharacters])
+        );
         addedCount = combined.length - previous.length;
         return combined;
       });
@@ -190,12 +234,12 @@ const App: React.FC = () => {
       if (addedCount > 0) {
         setStatusMessage(`已新增 ${addedCount} 個字到練習列表。`);
       } else {
-        setStatusMessage('辨識完成，但沒有發現新的漢字。');
+        setStatusMessage("辨識完成，但沒有發現新的漢字。");
       }
     } catch (err) {
       console.error(err);
       setStatusMessage(null);
-      setError('無法分析照片，請確認光線充足後重試。');
+      setError("無法分析照片，請確認光線充足後重試。");
     } finally {
       setIsProcessingPhoto(false);
     }
@@ -211,7 +255,7 @@ const App: React.FC = () => {
 
   useEffect(() => {
     return () => {
-      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      if (typeof window !== "undefined" && "speechSynthesis" in window) {
         window.speechSynthesis.cancel();
       }
     };
@@ -220,13 +264,17 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center p-4 font-sans">
       <header className="w-full max-w-2xl text-center mb-4 md:mb-6">
-        <h1 className="text-3xl sm:text-4xl font-bold text-cyan-400">我愛寫國字</h1>
-        <p className="text-lg sm:text-xl text-gray-300">Chinese Character Practice</p>
+        <h1 className="text-3xl sm:text-4xl font-bold text-cyan-400">
+          我愛寫國字
+        </h1>
+        <p className="text-lg sm:text-xl text-gray-300">國字練習</p>
       </header>
 
       <main className="w-full flex flex-col lg:flex-row items-center lg:items-start justify-center gap-4 lg:gap-8 flex-grow">
         <div className="w-full max-w-md lg:max-w-xs bg-gray-800 p-4 rounded-xl shadow-lg flex flex-col h-full">
-          <h2 className="text-xl font-semibold mb-3 text-cyan-400 border-b border-gray-700 pb-2">練習字庫</h2>
+          <h2 className="text-xl font-semibold mb-3 text-cyan-400 border-b border-gray-700 pb-2">
+            練習字庫
+          </h2>
           <CharacterSelector
             characters={characters}
             selectedIndex={currentCharacterIndex}
@@ -271,9 +319,14 @@ const App: React.FC = () => {
         <div className="flex flex-col items-center w-full max-w-md">
           <div className="relative w-full aspect-square bg-gray-800 rounded-2xl shadow-2xl overflow-hidden mb-4 border-2 border-gray-700">
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <span className="text-[18rem] text-gray-700 font-serif opacity-50">{currentCharacter}</span>
+              <span className="text-[18rem] text-gray-700 font-serif opacity-50">
+                {currentCharacter}
+              </span>
             </div>
-            <CharacterCanvas ref={canvasRef} key={`${currentCharacter}-${currentCharacterIndex}`} />
+            <CharacterCanvas
+              ref={canvasRef}
+              key={`${currentCharacter}-${currentCharacterIndex}`}
+            />
             <div className="absolute top-3 right-3 flex flex-col gap-2 z-10">
               <button
                 type="button"
@@ -313,7 +366,12 @@ const App: React.FC = () => {
                 <span>{error}</span>
               </div>
             )}
-            {feedback && <FeedbackDisplay feedback={feedback} targetCharacter={currentCharacter} />}
+            {feedback && (
+              <FeedbackDisplay
+                feedback={feedback}
+                targetCharacter={currentCharacter}
+              />
+            )}
           </div>
         </div>
       </main>
