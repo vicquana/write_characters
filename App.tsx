@@ -151,7 +151,7 @@ const App: React.FC = () => {
     canvasRef.current?.undo();
   };
 
-  const handlePronounce = () => {
+  const handlePronounce = async () => {
     if (!currentCharacter) {
       return;
     }
