@@ -7,13 +7,25 @@ import { Controls } from "./components/Controls";
 import { FeedbackDisplay } from "./components/FeedbackDisplay";
 import { CharacterSelector } from "./components/CharacterSelector";
 import { evaluateCharacter } from "./services/localEvaluationService";
-import { PRACTICE_CHARACTERS } from "./constants";
 import { FeedbackResponse } from "./types";
 import { Icon } from "./components/Icon";
 import { extractChineseCharactersFromImage } from "./services/ocrService";
+import {
+  CharacterSetKey,
+  convertCharacterSet,
+} from "./services/characterConversionService";
+
+const DEFAULT_PRACTICE_CHARACTERS = "佛神平公金河海刀劍全在草森林樹數學";
+
+const toUniqueCharacters = (text: string): string[] =>
+  Array.from(new Set(Array.from(text)));
 
 const App: React.FC = () => {
-  const [characters, setCharacters] = useState<string[]>(PRACTICE_CHARACTERS);
+  const [characterSet, setCharacterSet] =
+    useState<CharacterSetKey>("traditional");
+  const [characters, setCharacters] = useState<string[]>(() =>
+    toUniqueCharacters(DEFAULT_PRACTICE_CHARACTERS)
+  );
   const [currentCharacterIndex, setCurrentCharacterIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [isProcessingPhoto, setIsProcessingPhoto] = useState(false);
@@ -21,8 +33,10 @@ const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [canSelectOtherCharacter, setCanSelectOtherCharacter] = useState(true);
+  const [isCharacterSetLoading, setIsCharacterSetLoading] = useState(false);
   const canvasRef = useRef<CharacterCanvasRef>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const pronunciationAudioRef = useRef<HTMLAudioElement | null>(null);
 
   const currentCharacter = characters[currentCharacterIndex] ?? "";
 
@@ -75,7 +89,52 @@ const App: React.FC = () => {
     setError(null);
     setStatusMessage(null);
     canvasRef.current?.clear();
+    if (pronunciationAudioRef.current) {
+      pronunciationAudioRef.current.pause();
+      pronunciationAudioRef.current.currentTime = 0;
+      pronunciationAudioRef.current = null;
+    }
   }, []);
+
+  const handleToggleCharacterSet = useCallback(async () => {
+    if (isCharacterSetLoading) {
+      return;
+    }
+
+    const nextSet: CharacterSetKey =
+      characterSet === "traditional" ? "simplified" : "traditional";
+    const nextLabel = nextSet === "traditional" ? "繁體" : "簡體";
+
+    resetStateForNewCharacter();
+    setIsCharacterSetLoading(true);
+    setStatusMessage(`正在切換為${nextLabel}字庫...`);
+    setError(null);
+
+    try {
+      const convertedText = await convertCharacterSet(
+        characters.join(""),
+        nextSet
+      );
+      const nextCharacters = toUniqueCharacters(convertedText);
+
+      setCharacters(nextCharacters);
+      setCharacterSet(nextSet);
+      setCurrentCharacterIndex(0);
+      setCanSelectOtherCharacter(true);
+      setStatusMessage(`已切換為${nextLabel}字庫。`);
+    } catch (err) {
+      console.error(err);
+      setStatusMessage(null);
+      setError("切換字庫時發生錯誤，請檢查網路連線後重試。");
+    } finally {
+      setIsCharacterSetLoading(false);
+    }
+  }, [
+    characterSet,
+    characters,
+    isCharacterSetLoading,
+    resetStateForNewCharacter,
+  ]);
 
   const handleSelectCharacter = (index: number) => {
     if (index === currentCharacterIndex) {
@@ -258,6 +317,10 @@ const App: React.FC = () => {
       if (typeof window !== "undefined" && "speechSynthesis" in window) {
         window.speechSynthesis.cancel();
       }
+      if (pronunciationAudioRef.current) {
+        pronunciationAudioRef.current.pause();
+        pronunciationAudioRef.current = null;
+      }
     };
   }, []);
 
@@ -272,9 +335,27 @@ const App: React.FC = () => {
 
       <main className="w-full flex flex-col lg:flex-row items-center lg:items-start justify-center gap-4 lg:gap-8 flex-grow">
         <div className="w-full max-w-md lg:max-w-xs bg-gray-800 p-4 rounded-xl shadow-lg flex flex-col h-full">
-          <h2 className="text-xl font-semibold mb-3 text-cyan-400 border-b border-gray-700 pb-2">
-            練習字庫
-          </h2>
+          <div className="flex items-center justify-between gap-3 mb-3 border-b border-gray-700 pb-2">
+            <h2 className="text-xl font-semibold text-cyan-400">練習字庫</h2>
+            <button
+              type="button"
+              onClick={handleToggleCharacterSet}
+              disabled={isCharacterSetLoading}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-cyan-200 bg-cyan-900/30 border border-cyan-700/60 hover:bg-cyan-800/40 transition disabled:opacity-60 disabled:cursor-not-allowed"
+              aria-label={`切換為${characterSet === "traditional" ? "簡體" : "繁體"}`}
+            >
+              {isCharacterSetLoading ? (
+                <>
+                  <Icon name="loader" className="animate-spin" />
+                  切換中...
+                </>
+              ) : characterSet === "traditional" ? (
+                "繁體 → 簡體"
+              ) : (
+                "簡體 → 繁體"
+              )}
+            </button>
+          </div>
           <CharacterSelector
             characters={characters}
             selectedIndex={currentCharacterIndex}
