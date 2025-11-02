@@ -67,7 +67,7 @@ export const Controls: React.FC<ControlsProps> = ({ onClear, onUndo, onSubmit, o
         disabled={isLoading}
         className="col-span-2 bg-indigo-600 hover:bg-indigo-500 text-white focus:ring-indigo-400"
       >
-        下一個字
+        下一个字
         <Icon name="next" />
       </ControlButton>
     </div>
