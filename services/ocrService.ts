@@ -27,7 +27,7 @@ let tesseractLoader: Promise<TesseractModule> | null = null;
 
 async function loadTesseract(): Promise<TesseractModule> {
   if (typeof window === 'undefined' || typeof document === 'undefined') {
-    throw new Error('Tesseract.js 需要在瀏覽器環境中執行。');
+    throw new Error('Tesseract.js 需要在浏览器环境中执行。');
   }
 
   if (window.Tesseract) {
@@ -44,12 +44,12 @@ async function loadTesseract(): Promise<TesseractModule> {
           resolve(window.Tesseract);
         } else {
           tesseractLoader = null;
-          reject(new Error('無法載入 Tesseract.js。'));
+          reject(new Error('无法载入 Tesseract.js。'));
         }
       };
       script.onerror = () => {
         tesseractLoader = null;
-        reject(new Error('無法載入 Tesseract.js。'));
+        reject(new Error('无法载入 Tesseract.js。'));
       };
       (document.body || document.head).appendChild(script);
     });

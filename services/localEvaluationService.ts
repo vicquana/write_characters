@@ -14,7 +14,7 @@ interface DrawingMetrics {
 const loadImageData = (imageDataBase64: string): Promise<ImageData> => {
   return new Promise((resolve, reject) => {
     if (typeof document === 'undefined') {
-      reject(new Error('Image analysis is only available in the browser.'));
+      reject(new Error('图像分析仅能在浏览器中进行。'));
       return;
     }
 
@@ -26,7 +26,7 @@ const loadImageData = (imageDataBase64: string): Promise<ImageData> => {
       const ctx = canvas.getContext('2d');
 
       if (!ctx) {
-        reject(new Error('Unable to analyse the drawing.'));
+        reject(new Error('无法分析该绘图。'));
         return;
       }
 
@@ -35,7 +35,7 @@ const loadImageData = (imageDataBase64: string): Promise<ImageData> => {
       resolve(imageData);
     };
 
-    image.onerror = () => reject(new Error('Failed to load drawing for analysis.'));
+    image.onerror = () => reject(new Error('加载绘图进行分析时失败。'));
     image.src = `data:image/png;base64,${imageDataBase64}`;
   });
 };
@@ -127,10 +127,10 @@ const clamp = (value: number, min: number, max: number): number => {
 
 const formatSuggestions = (items: string[]): string => {
   if (items.length === 1) return items[0];
-  if (items.length === 2) return `${items[0]}並且${items[1]}`;
+  if (items.length === 2) return `${items[0]}并且${items[1]}`;
   const allButLast = items.slice(0, -1).join('、');
   const last = items[items.length - 1];
-  return `${allButLast}，並且${last}`;
+  return `${allButLast}，并且${last}`;
 };
 
 export const evaluateCharacter = async (imageDataBase64: string, character: string): Promise<FeedbackResponse> => {
@@ -138,10 +138,10 @@ export const evaluateCharacter = async (imageDataBase64: string, character: stri
 
   if (!metrics.hasInk) {
     return {
-      identifiedCharacter: '未書寫',
+      identifiedCharacter: '未书写',
       isCorrect: false,
       score: 0,
-      feedback: `看起來還沒有落筆，試著先描寫「${character}」的筆畫。`,
+      feedback: `看起来还没有落笔，试着先描写「${character}」的笔画。`,
     };
   }
 
@@ -163,24 +163,24 @@ export const evaluateCharacter = async (imageDataBase64: string, character: stri
 
   const suggestions: string[] = [];
   if (metrics.coverage < 0.03) {
-    suggestions.push('多寫幾筆讓字形更清楚');
+    suggestions.push('多写几笔让字形更清楚');
   }
   if (spanAverage < 0.45) {
-    suggestions.push('把筆畫稍微拉開填滿米字格');
+    suggestions.push('把笔画稍微拉开填满米字格');
   }
   if ((metrics.offsetX + metrics.offsetY) / 2 > 0.2) {
-    suggestions.push('讓整個字更居中');
+    suggestions.push('让整个字更居中');
   }
   if (metrics.touchesEdge) {
     suggestions.push('注意不要碰到外框');
   }
   if (metrics.outsideTrackRatio > 0.15) {
-    suggestions.push('維持筆畫在描紅軌跡內');
+    suggestions.push('维持笔画在描红轨迹内');
   }
 
   const feedback = suggestions.length === 0
-    ? `太棒了！你的「${character}」筆畫穩定又清楚。`
-    : `試著${formatSuggestions(suggestions)}，你的「${character}」會更好看。`;
+    ? `太棒了！你的「${character}」笔画稳定又清楚。`
+    : `试着${formatSuggestions(suggestions)}，你的「${character}」会更好看。`;
 
   return {
     identifiedCharacter,

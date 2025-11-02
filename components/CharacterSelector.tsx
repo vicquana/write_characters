@@ -23,7 +23,7 @@ export const CharacterSelector: React.FC<CharacterSelectorProps> = ({
             key={`${char}-${index}`}
             onClick={() => onSelect(index)}
             disabled={isDisabled}
-            title={isDisabled ? '需要獲得 70 分以上才能選擇其他字' : undefined}
+            title={isDisabled ? '需要获得 70 分以上才能选择其他字' : undefined}
             className={`
               aspect-square flex items-center justify-center
               text-3xl font-serif rounded-lg transition-all duration-200
