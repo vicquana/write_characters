@@ -15,7 +15,8 @@ import {
   convertCharacterSet,
 } from "./services/characterConversionService";
 
-const DEFAULT_PRACTICE_CHARACTERS = "佛神平公金河海刀劍全在草森林樹數學";
+const DEFAULT_PRACTICE_CHARACTERS =
+  "船馬學習漢字愛國家和平快樂自由友誼希望夢想努力成功智慧誠信勇氣尊重責任分享關愛健康幸福家庭朋友老師同學社會文化歷史傳統藝術音樂閱讀寫作運動旅行自然環境科技創新未來成長挑戰機會信念熱情創造力想像力探索發現冒險團隊合作領導力溝通理解包容耐心堅持自律目標計劃時間管理效率平衡積極正面樂觀感恩謙虛幽默同理心慈悲寬容忠誠榮譽公平正義法律秩序民主自由人權和平安全環保節約資源可持續發展全球化多元文化交流合作競爭市場經濟金融投資創業職業技能教育培訓實踐經驗反思改進成就卓越";
 
 const toUniqueCharacters = (text: string): string[] =>
   Array.from(new Set(Array.from(text)));
@@ -342,7 +343,9 @@ const App: React.FC = () => {
               onClick={handleToggleCharacterSet}
               disabled={isCharacterSetLoading}
               className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-cyan-200 bg-cyan-900/30 border border-cyan-700/60 hover:bg-cyan-800/40 transition disabled:opacity-60 disabled:cursor-not-allowed"
-              aria-label={`切換為${characterSet === "traditional" ? "簡體" : "繁體"}`}
+              aria-label={`切換為${
+                characterSet === "traditional" ? "簡體" : "繁體"
+              }`}
             >
               {isCharacterSetLoading ? (
                 <>
