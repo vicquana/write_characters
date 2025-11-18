@@ -14,7 +14,11 @@ export const CharacterSelector: React.FC<CharacterSelectorProps> = ({
   canSelectOtherCharacter,
 }) => {
   return (
-    <div className="grid grid-cols-4 gap-2 overflow-y-auto">
+    <div
+      className="grid grid-cols-4 gap-2 overflow-y-auto max-h-[calc(9*min(16vw,4rem))]"
+      role="listbox"
+      aria-label="練習字庫"
+    >
       {characters.map((char, index) => {
         const isSelected = index === selectedIndex;
         const isDisabled = !canSelectOtherCharacter && !isSelected;
