@@ -10,6 +10,7 @@ Write Characters is a Vite + React application that helps learners practise writ
 - **Audio pronunciation** – Listen to Taiwanese Mandarin speech synthesis for the active character through the browser's built-in speech engine.
 - **Photo import with OCR** – Extract characters from reference sheets or handwriting using Tesseract.js, then add them directly into your practice set.
 - **Progress guardrails** – Encourage mastery by locking character switching until a baseline score (70+) is achieved.
+- **Legible typography** – Noto Sans TC is bundled for the character selector and canvas overlay to match modern sans-serif styling.
 
 ## Tech stack
 

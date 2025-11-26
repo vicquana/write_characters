@@ -30,7 +30,7 @@ export const CharacterSelector: React.FC<CharacterSelectorProps> = ({
             title={isDisabled ? '需要獲得 70 分以上才能選擇其他字' : undefined}
             className={`
               aspect-square flex items-center justify-center
-              text-3xl font-serif rounded-lg transition-all duration-200
+              text-3xl font-noto rounded-lg transition-all duration-200
               focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800
               disabled:opacity-50 disabled:cursor-not-allowed
               ${isSelected
