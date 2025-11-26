@@ -403,7 +403,7 @@ const App: React.FC = () => {
         <div className="flex flex-col items-center w-full max-w-md">
           <div className="relative w-full aspect-square bg-gray-800 rounded-2xl shadow-2xl overflow-hidden mb-4 border-2 border-gray-700">
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <span className="text-[18rem] text-gray-700 font-serif opacity-50">
+              <span className="text-[18rem] text-gray-700 font-noto opacity-50">
                 {currentCharacter}
               </span>
             </div>
