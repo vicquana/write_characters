@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <rect width="128" height="128" rx="24" fill="#111827" />
+  <text
+    x="64"
+    y="80"
+    text-anchor="middle"
+    font-family="&quot;Noto Sans CJK SC&quot;, &quot;PingFang SC&quot;, &quot;Microsoft YaHei&quot;, sans-serif"
+    font-size="72"
+    fill="#f9fafb"
+  >
+    中
+  </text>
+</svg>
